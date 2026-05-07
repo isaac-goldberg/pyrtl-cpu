@@ -34,10 +34,11 @@ def assemble(filename):
         registers[f'x{i}'] = i
 
     program = {}
-    lines = [line.strip() for line in asm_code.split('\n') if line.strip()]
+    lines = [line.strip() for line in asm_code.replace("$", "").split('\n') if line.strip()]
+    idx = 0
 
-    for idx, line in enumerate(lines):
-        line = re.split(r'[#;]', line)[0].strip()
+    for _, line in enumerate(lines):
+        line = re.split(r'[#;@]', line)[0].strip()
         if not line: continue
 
         parts = re.split(r'[,\s]+', line.lower())
@@ -60,9 +61,10 @@ def assemble(filename):
             
         elif info['type'] == 'I':
             # imm, rs1, funct3, rd, opcode
-            imm = int(parts[3], 0) & 0xFFF # 12 bits for imm
+            imm = int(parts[3], 0) & 0xFFF # limit to 12 bits
             machine_code = (imm << 20) | (rs1 << 15) | (info['f3'] << 12) | (rd << 7) | opcode
 
         program[idx] = machine_code
+        idx += 1
 
     return program
