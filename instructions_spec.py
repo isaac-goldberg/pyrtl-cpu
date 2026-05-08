@@ -1,83 +1,136 @@
 import pyrtl
 
 instr_types = {
-    "R": 0b0110011,
-    "I": 0b0010011,
+    "R": 0x33,
+    "I": 0x13,
+    "B": 0x62,
+    "J": 0x6F,
 }
 
 r_type = [
     {
         "name": "add",
-        "f7": 0b0000000,
-        "f3": 0b000,
+        "f3": 0x0,
+        "f7": 0x0,
         "op": lambda a, b: a + b
     },
     {
         "name": "sub",
-        "f7": 0b0100000,
-        "f3": 0b000,
+        "f3": 0x0,
+        "f7": 0x20,
         "op": lambda a, b: a - b
     },
     {
+        "name": "xor",
+        "f3": 0x4,
+        "f7": 0x0,
+        "op": lambda a, b: a ^ b
+    },
+    {
+        "name": "or",
+        "f3": 0x6,
+        "f7": 0x0,
+        "op": lambda a, b: a | b
+    },
+    {
+        "name": "and",
+        "f3": 0x7,
+        "f7": 0x0,
+        "op": lambda a, b: a & b
+    },
+    {
         "name": "sll",
-        "f7": 0b0000000,
-        "f3": 0b001,
+        "f3": 0x1,
+        "f7": 0x0,
         "op": lambda a, b: pyrtl.shift_left_logical(a, b)
     },
-    # "slt": {
-    #     "f7": 0b0000000,
-    #     "f3": 0b010,
-    #     "op": lambda a, b: 1 if a < b else 0
-    # },
-    # "sltu": {
-    #     "f7": 0b0000000,
-    #     "f3": 0b011,
-    #     "op": lambda a, b: 1 if (a & 0xFFFFFFFF) < (b & 0xFFFFFFFF) else 0
-    # },
-    # "or": {
-    #     "f7": 0b0000000,
-    #     "f3": 0b110,
-    #     "op": lambda a, b: a | b
-    # },
-    # "and": {
-    #     "f7": 0b0000000,
-    #     "f3": 0b111,
-    #     "op": lambda a, b: a & b
-    # },
-    # "xor": {
-    #     "f7": 0b0000000,
-    #     "f3": 0b100,
-    #     "op": lambda a, b: a ^ b
-    # },
-    # "srl": {
-    #     "f7": 0b0000000,
-    #     "f3": 0b101,
-    #     "op": lambda a, b: pyrtl.shift_right_logical(a, b)
-    # },
-    # "sra": {
-    #     "f7": 0b0100000,
-    #     "f3": 0b101,
-    #     "op": lambda a, b: a >> (b & 0x1F)
-    # },
+    {
+        "name": "srl",
+        "f3": 0x5,
+        "f7": 0x0,
+        "op": lambda a, b: pyrtl.shift_right_logical(a, b)
+    },
+    {
+        "name": "sra",
+        "f3": 0x5,
+        "f7": 0x20,
+        "op": lambda a, b: pyrtl.shift_right_arithmetic(a, b)
+    },
+    {
+        "name": "slt",
+        "f3": 0x2,
+        "f7": 0x0,
+        "op": lambda a, b: pyrtl.signed_lt(a, b)
+    },
+    {
+        "name": "sltu",
+        "f3": 0x3,
+        "f7": 0x0,
+        "op": lambda a, b: a < b
+    },
 ]
 
 i_type = [
     {
         "name": "addi",
-        "f3": 0b000,
+        "f3": 0x0,
         "op": lambda a, imm: a + imm,
     },
+    {
+        "name": "xori",
+        "f3": 0x4,
+        "op": lambda a, imm: a ^ imm,
+    },
+    {
+        "name": "ori",
+        "f3": 0x6,
+        "op": lambda a, imm: a | imm,
+    },
+    {
+        "name": "andi",
+        "f3": 0x7,
+        "op": lambda a, imm: a & imm,
+    },
+    {
+        "name": "slli",
+        "f3": 0x1,
+        "f7": 0x0,
+        "op": lambda a, shamt: pyrtl.shift_left_logical(a, shamt),
+    },
+    {
+        "name": "srli",
+        "f3": 0x5,
+        "f7": 0x0,
+        "op": lambda a, shamt: pyrtl.shift_right_logical(a, shamt),
+    },
+    {
+        "name": "srai",
+        "f3": 0x5,
+        "f7": 0x20,
+        "op": lambda a, shamt: pyrtl.shift_right_arithmetic(a, shamt), 
+    },
+    {
+        "name": "slti",
+        "f3": 0x2,
+        "op": lambda a, imm: pyrtl.signed_lt(a, imm),
+    },
+    {
+        "name": "sltiu",
+        "f3": 0x3,
+        "op": lambda a, imm: a < imm,
+    }
 ]
 
-# format: (f3): operation(a, imm)
-# i_type = {
-#     0b000: lambda a, imm: a + imm, # addi
-#     0b111: lambda a, imm: a & imm, # andi
-#     0b110: lambda a, imm: a | imm, # ori
-#     0b100: lambda a, imm: a ^ imm, # xori
-#     0b010: lambda a, imm: a < imm, # slti
-#     0b011: lambda a, imm: a < imm, # sltiu
-#     # Shifts
-#     # 0b001: lambda a, imm: a << (imm & 0b11111),                     # SLLI
-#     # 0b101: lambda a, imm: a >> (imm & 0b11111) if (imm & 0b100000) == 0 else a.signed_right_shift(imm & 0b11111),   # SRLI / SRAI
-# }
+b_type = [
+    {
+        "name": "beq",
+        "f3": 0x0,
+        "op": lambda a, b: a == b,
+    }
+]
+
+j_type = [
+    {
+        "name": "jal",
+    }
+]
