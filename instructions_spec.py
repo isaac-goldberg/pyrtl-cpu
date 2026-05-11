@@ -5,6 +5,7 @@ instr_types = {
     "I": 0x13,
     "B": 0x62,
     "J": 0x6F,
+    "custom": 0x73,
 }
 
 r_type = [
@@ -132,5 +133,11 @@ b_type = [
 j_type = [
     {
         "name": "jal",
+    }
+]
+
+custom = [
+    {
+        "name": "ecall",
     }
 ]

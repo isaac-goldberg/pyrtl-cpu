@@ -17,6 +17,7 @@ add_type("R", r_type)
 add_type("I", i_type)
 add_type("B", b_type)
 add_type("J", j_type)
+add_type("custom", custom)
 
 def load(filename):
     with open(filename, "r") as file:
@@ -26,41 +27,41 @@ def assemble(filename):
     asm_code = load(filename)
     
     registers = {
-        'zero': 0, 'ra': 1, 'sp': 2, 'gp': 3, 'tp': 4,
-        't0': 5, 't1': 6, 't2': 7, 's0': 8, 'fp': 8, 's1': 9,
-        'a0': 10, 'a1': 11, 'a2': 12, 'a3': 13, 'a4': 14, 'a5': 15, 'a6': 16, 'a7': 17,
-        's2': 18, 's3': 19, 's4': 20, 's5': 21, 's6': 22, 's7': 23, 's8': 24, 's9': 25, 's10': 26, 's11': 27,
-        't3': 28, 't4': 29, 't5': 30, 't6': 31
+        "zero": 0, "ra": 1, "sp": 2, "gp": 3, "tp": 4,
+        "t0": 5, "t1": 6, "t2": 7, "s0": 8, "fp": 8, "s1": 9,
+        "a0": 10, "a1": 11, "a2": 12, "a3": 13, "a4": 14, "a5": 15, "a6": 16, "a7": 17,
+        "s2": 18, "s3": 19, "s4": 20, "s5": 21, "s6": 22, "s7": 23, "s8": 24, "s9": 25, "s10": 26, "s11": 27,
+        "t3": 28, "t4": 29, "t5": 30, "t6": 31
     }
     for i in range(32): 
-        registers[f'x{i}'] = i
+        registers[f"x{i}"] = i
 
     program = {}
-    lines = [line.strip() for line in asm_code.replace("$", "").split('\n') if line.strip()]
+    lines = [line.strip() for line in asm_code.replace("$", "").split("\n") if line.strip()]
 
     labels = {}
     instructions = []
     pc = 0
 
+    # first pass for symbols
     for line in lines:
         # remove comments
-        line = re.split(r'[#;@]', line)[0].strip()
+        line = re.split(r"[#;@]", line)[0].strip()
         if not line: continue
 
         # labels
-        if ':' in line:
-            label_part, instr_part = line.split(':', 1)
+        if ":" in line:
+            label_part, instr_part = line.split(":", 1)
             labels[label_part.strip().lower()] = pc
             line = instr_part.strip()
             if not line: continue
 
-        parts = re.split(r'[,\s]+', line.lower())
+        parts = re.split(r"[,\s]+", line.lower())
         parts = [p for p in parts if p] # this removes empty strings
         instructions.append((pc, parts))
         pc += 4
 
-
-    # --- PASS 2: Assemble Machine Code ---
+    # second pass for instructions
     for pc, parts in instructions:
         idx = pc // 4
         inst_name = parts[0]
@@ -72,14 +73,14 @@ def assemble(filename):
         info = isa_map[inst_name]
         opcode = instr_types[info["type"]]
 
-        if info['type'] == 'R':
+        if info["type"] == "R":
             # format: add rd, rs1, rs2
             rd = registers[parts[1]]
             rs1 = registers[parts[2]]
             rs2 = registers[parts[3]]
-            machine_code = (info['f7'] << 25) | (rs2 << 20) | (rs1 << 15) | (info['f3'] << 12) | (rd << 7) | opcode
             
-        elif info['type'] == 'I':
+            machine_code = (info["f7"] << 25) | (rs2 << 20) | (rs1 << 15) | (info["f3"] << 12) | (rd << 7) | opcode
+        elif info["type"] == "I":
             # format: addi rd, rs1, imm
             rd = registers[parts[1]]
             rs1 = registers[parts[2]]
@@ -87,14 +88,13 @@ def assemble(filename):
             
             if "f7" in info: # bitshifts use funct7
                 shamt = int(parts[3], 0) & 0x1F
-                f7 = info.get('f7', 0) 
+                f7 = info.get("f7", 0) 
                 imm_field = (f7 << 5) | shamt
             else:
                 imm_field = int(parts[3], 0) & 0xFFF
                 
-            machine_code = (imm_field << 20) | (rs1 << 15) | (info['f3'] << 12) | (rd << 7) | opcode
-
-        elif info['type'] == 'B':
+            machine_code = (imm_field << 20) | (rs1 << 15) | (info["f3"] << 12) | (rd << 7) | opcode
+        elif info["type"] == "B":
             # format: beq rs1, rs2, label
             rs1 = registers[parts[1]]
             rs2 = registers[parts[2]]
@@ -111,9 +111,8 @@ def assemble(filename):
             imm_10_5 = (offset >> 5) & 0x3F
             imm_4_1 = (offset >> 1) & 0xF
             
-            machine_code = (imm_12 << 31) | (imm_10_5 << 25) | (rs2 << 20) | (rs1 << 15) | (info['f3'] << 12) | (imm_4_1 << 8) | (imm_11 << 7) | opcode
-            
-        elif info['type'] == 'J':
+            machine_code = (imm_12 << 31) | (imm_10_5 << 25) | (rs2 << 20) | (rs1 << 15) | (info["f3"] << 12) | (imm_4_1 << 8) | (imm_11 << 7) | opcode
+        elif info["type"] == "J":
             # format: jal rd, label
             rd = registers[parts[1]]
             target = parts[2]
@@ -130,7 +129,13 @@ def assemble(filename):
             imm_10_1 = (offset >> 1) & 0x3FF
             
             machine_code = (imm_20 << 31) | (imm_10_1 << 21) | (imm_11 << 20) | (imm_19_12 << 12) | (rd << 7) | opcode
-
+        elif info["type"] == "custom":
+            # format: ecall code
+            code = parts[1]
+            code = int(code) & 0xFFF
+            
+            machine_code = (code << 20) | opcode
+        
         program[idx] = machine_code
 
     return program

@@ -27,7 +27,8 @@ rs2 = instr[20:25]
 funct7 = instr[25:32]
 
 # used by I
-i_imm_ext = instr[20:32].sign_extended(32)
+i_imm = instr[20:32]
+i_imm_ext = i_imm.sign_extended(32)
 shamt = rs2 # alias
 
 # used by B
@@ -45,6 +46,9 @@ j_imm_11 = instr[20:21]
 j_imm_10_1 = instr[21:31]
 j_imm_21 = pyrtl.concat(j_imm_20, j_imm_19_12, j_imm_11, j_imm_10_1, pyrtl.Const(0, 1))
 j_imm_ext = j_imm_21.sign_extended(32)
+
+# used by custom instructions
+ecall_code = instr[20:32]
 # ---------------------------------------------------------
 
 rs1_val = pyrtl.WireVector(32, 'rs1_val')
@@ -65,7 +69,7 @@ with pyrtl.conditional_assignment:
             alu |= ins["op"](rs1_val, rs2_val)
 
     for ins in i_type:
-        if "f7" in ins: # bitshifts differentiated by funct7
+        if "f7" in ins: # bitshifts use funct7
             with (opcode == instr_types["I"]) & (ins["f3"] == funct3) & (ins["f7"] == funct7):
                 alu |= ins["op"](rs1_val, shamt)
         else:
@@ -81,53 +85,62 @@ reg_write_enable = (rd != 0) & (opcode != instr_types["B"])
 reg_file[rd] <<= pyrtl.MemBlock.EnabledWrite(alu, enable=reg_write_enable)
 
 # PC incrementing or branching
-take_branch = pyrtl.WireVector(1)
+do_branch = pyrtl.WireVector(1)
 
 with pyrtl.conditional_assignment:
     for ins in b_type:
         with (opcode == instr_types["B"]) & (ins["f3"] == funct3):
-            take_branch |= ins["op"](rs1_val, rs2_val)
+            do_branch |= ins["op"](rs1_val, rs2_val)
     with pyrtl.otherwise:
-        take_branch |= 0
+        do_branch |= 0
 
-next_pc = pyrtl.WireVector(32, 'next_pc')
+next_pc = pyrtl.WireVector(32)
 with pyrtl.conditional_assignment:
-    with (opcode == instr_types["B"]) & (take_branch == 1):
+    with (opcode == instr_types["B"]) & (do_branch == 1):
         next_pc |= pc + b_imm_ext
     with opcode == instr_types["J"]:
         next_pc |= pc + j_imm_ext
     with pyrtl.otherwise:
         next_pc |= pc_plus_4
-
 pc.next <<= next_pc
 
 sim_trace = pyrtl.SimulationTrace()
 sim = pyrtl.Simulation(tracer=sim_trace)
 
 # clock
-MAX_STEPS = 1000000
+MAX_TICKS = 1000000
 i = 0
+print_activated = False
 while True:
-    if i >= MAX_STEPS:
+    if i >= MAX_TICKS:
+        print("max clock cycles of ", MAX_TICKS, "exceeded, shutting down program")
         break
     
     sim.step({})
     reg_states = sim.inspect_mem(reg_file)
-    if reg_states.get(31, 0) == 10: # graceful exit code
-        break
+    
+    opcode_state = sim.inspect(opcode)
+    if opcode_state == instr_types["custom"]:
+        ecall_code_state = sim.inspect(ecall_code)
+        if ecall_code_state == 1:
+            print(reg_states.get(31, 0))
+        elif ecall_code_state == 10:
+            break
+    
     i += 1
 
-# view output
-# sim_trace.render_trace(symbol_len=5, segment_size=1)
-print("---------------------REGISTER STATES---------------------")
-reg_state = sim.inspect_mem(reg_file)
-for i in range(32):
-    val = reg_state.get(i, 0)
-    if val == 0: continue
-    
-    if val & (1 << 31):
-        signed_v = val - (1 << 32)
-    else:
-        signed_v = val
-    
-    print(f"x{i} = {signed_v}")
+debugging = False
+if debugging:
+    sim_trace.render_trace(symbol_len=5, segment_size=1)
+    print("---------------------REGISTER STATES---------------------")
+    reg_state = sim.inspect_mem(reg_file)
+    for i in range(32):
+        val = reg_state.get(i, 0)
+        if val == 0: continue
+        
+        if val & (1 << 31):
+            signed_v = val - (1 << 32)
+        else:
+            signed_v = val
+        
+        print(f"x{i} = {signed_v}")
