@@ -1,0 +1,3 @@
+- multiplication
+- load/store words
+- jalr for function calls

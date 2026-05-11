@@ -127,6 +127,31 @@ b_type_instructions = [
         "name": "beq",
         "f3": 0x0,
         "op": lambda a, b: a == b,
+    },
+    {
+        "name": "bne",
+        "f3": 0x1,
+        "op": lambda a, b: a != b,
+    },
+    {
+        "name": "blt",
+        "f3": 0x4,
+        "op": lambda a, b: pyrtl.signed_lt(a, b),
+    },
+    {
+        "name": "bge",
+        "f3": 0x5,
+        "op": lambda a, b: pyrtl.signed_ge(a, b),
+    },
+    {
+        "name": "bltu",
+        "f3": 0x6,
+        "op": lambda a, b: a < b,
+    },
+    {
+        "name": "bgeu",
+        "f3": 0x7,
+        "op": lambda a, b: a >= b,
     }
 ]
 

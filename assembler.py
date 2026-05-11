@@ -50,7 +50,7 @@ def assemble(filename):
             if not line: continue
 
         parts = re.split(r"[,\s]+", line.lower())
-        parts = [p for p in parts if p] # this removes empty strings
+        parts = [p for p in parts if p] # remove empty strings
         instructions.append((pc, parts))
         pc += 4
 
