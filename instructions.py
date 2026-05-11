@@ -1,6 +1,6 @@
 import pyrtl
 
-instr_types = {
+instruction_types = {
     "R": 0x33,
     "I": 0x13,
     "B": 0x62,
@@ -8,7 +8,7 @@ instr_types = {
     "custom": 0x73,
 }
 
-r_type = [
+r_type_instructions = [
     {
         "name": "add",
         "f3": 0x0,
@@ -71,7 +71,7 @@ r_type = [
     },
 ]
 
-i_type = [
+i_type_instructions = [
     {
         "name": "addi",
         "f3": 0x0,
@@ -122,7 +122,7 @@ i_type = [
     }
 ]
 
-b_type = [
+b_type_instructions = [
     {
         "name": "beq",
         "f3": 0x0,
@@ -130,13 +130,13 @@ b_type = [
     }
 ]
 
-j_type = [
+j_type_instructions = [
     {
         "name": "jal",
     }
 ]
 
-custom = [
+custom_instructions = [
     {
         "name": "ecall",
     }

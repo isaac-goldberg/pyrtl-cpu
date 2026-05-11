@@ -1,6 +1,6 @@
 import pyrtl
 from assembler import assemble
-from instructions_spec import *
+from instructions import *
 
 pc = pyrtl.Register(bitwidth=32, name='pc')
 reg_file = pyrtl.MemBlock(bitwidth=32, addrwidth=5, name='reg_file', asynchronous=True)
@@ -61,44 +61,42 @@ with pyrtl.conditional_assignment:
 
 pc_plus_4 = pc + 4
 
-# ALU execution
-alu = pyrtl.WireVector(32, 'alu')
+# ALU execution, R and I type instructions
+alu = pyrtl.WireVector(32, "alu")
 with pyrtl.conditional_assignment:
-    for ins in r_type:
-        with (opcode == instr_types["R"]) & (ins["f7"] == funct7) & (ins["f3"] == funct3):
+    for ins in r_type_instructions:
+        with (opcode == instruction_types["R"]) & (ins["f7"] == funct7) & (ins["f3"] == funct3):
             alu |= ins["op"](rs1_val, rs2_val)
 
-    for ins in i_type:
+    for ins in i_type_instructions:
         if "f7" in ins: # bitshifts use funct7
-            with (opcode == instr_types["I"]) & (ins["f3"] == funct3) & (ins["f7"] == funct7):
+            with (opcode == instruction_types["I"]) & (ins["f3"] == funct3) & (ins["f7"] == funct7):
                 alu |= ins["op"](rs1_val, shamt)
         else:
-            with (opcode == instr_types["I"]) & (ins["f3"] == funct3):
+            with (opcode == instruction_types["I"]) & (ins["f3"] == funct3):
                 alu |= ins["op"](rs1_val, i_imm_ext)
                 
-    with opcode == instr_types["J"]:
+    with opcode == instruction_types["J"]:
         alu |= pc_plus_4
 
     with pyrtl.otherwise: alu |= 0
-
-reg_write_enable = (rd != 0) & (opcode != instr_types["B"])
+reg_write_enable = (rd != 0) & (opcode != instruction_types["B"])
 reg_file[rd] <<= pyrtl.MemBlock.EnabledWrite(alu, enable=reg_write_enable)
 
-# PC incrementing or branching
+# PC modifying, J and B type instructions
 do_branch = pyrtl.WireVector(1)
-
 with pyrtl.conditional_assignment:
-    for ins in b_type:
-        with (opcode == instr_types["B"]) & (ins["f3"] == funct3):
+    for ins in b_type_instructions:
+        with (opcode == instruction_types["B"]) & (ins["f3"] == funct3):
             do_branch |= ins["op"](rs1_val, rs2_val)
     with pyrtl.otherwise:
         do_branch |= 0
 
 next_pc = pyrtl.WireVector(32)
 with pyrtl.conditional_assignment:
-    with (opcode == instr_types["B"]) & (do_branch == 1):
+    with (opcode == instruction_types["B"]) & (do_branch == 1):
         next_pc |= pc + b_imm_ext
-    with opcode == instr_types["J"]:
+    with opcode == instruction_types["J"]:
         next_pc |= pc + j_imm_ext
     with pyrtl.otherwise:
         next_pc |= pc_plus_4
@@ -120,10 +118,10 @@ while True:
     reg_states = sim.inspect_mem(reg_file)
     
     opcode_state = sim.inspect(opcode)
-    if opcode_state == instr_types["custom"]:
+    if opcode_state == instruction_types["custom"]:
         ecall_code_state = sim.inspect(ecall_code)
         if ecall_code_state == 1:
-            print(reg_states.get(31, 0))
+            print(reg_states.get(10, 0))
         elif ecall_code_state == 10:
             break
     

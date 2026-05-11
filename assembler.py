@@ -1,23 +1,24 @@
 import re
-from instructions_spec import *
+from instructions import *
+from abi import registers
 
 isa_map = {}
 def add_type(char, instrs):
     for instr in instrs:
         new_dict = {
             "type": char,
-            "opcode": instr_types[char],
+            "opcode": instruction_types[char],
         }
         for key, value in instr.items():
             if key != "name" and key != "op":
                 new_dict[key] = value
         isa_map[instr["name"]] = new_dict
 
-add_type("R", r_type)
-add_type("I", i_type)
-add_type("B", b_type)
-add_type("J", j_type)
-add_type("custom", custom)
+add_type("R", r_type_instructions)
+add_type("I", i_type_instructions)
+add_type("B", b_type_instructions)
+add_type("J", j_type_instructions)
+add_type("custom", custom_instructions)
 
 def load(filename):
     with open(filename, "r") as file:
@@ -25,14 +26,6 @@ def load(filename):
 
 def assemble(filename):
     asm_code = load(filename)
-    
-    registers = {
-        "zero": 0, "ra": 1, "sp": 2, "gp": 3, "tp": 4,
-        "t0": 5, "t1": 6, "t2": 7, "s0": 8, "fp": 8, "s1": 9,
-        "a0": 10, "a1": 11, "a2": 12, "a3": 13, "a4": 14, "a5": 15, "a6": 16, "a7": 17,
-        "s2": 18, "s3": 19, "s4": 20, "s5": 21, "s6": 22, "s7": 23, "s8": 24, "s9": 25, "s10": 26, "s11": 27,
-        "t3": 28, "t4": 29, "t5": 30, "t6": 31
-    }
     for i in range(32): 
         registers[f"x{i}"] = i
 
@@ -71,7 +64,7 @@ def assemble(filename):
             continue
 
         info = isa_map[inst_name]
-        opcode = instr_types[info["type"]]
+        opcode = instruction_types[info["type"]]
 
         if info["type"] == "R":
             # format: add rd, rs1, rs2
