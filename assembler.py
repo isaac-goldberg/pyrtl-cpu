@@ -24,8 +24,10 @@ def load(filename):
     with open(filename, "r") as file:
         return file.read()
 
-def assemble(filename):
-    asm_code = load(filename)
+# def assemble(filename):
+#     asm_code = load(filename)
+def assemble(str):
+    asm_code = str
     for i in range(32): 
         registers[f"x{i}"] = i
 

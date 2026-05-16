@@ -69,6 +69,30 @@ r_type_instructions = [
         "f7": 0x0,
         "op": lambda a, b: a < b
     },
+    {
+        "name": "mul", 
+        "f3": 0x0,
+        "f7": 0x01, 
+        "op": lambda rs1, rs2: (rs1 * rs2)[0:32]
+    },
+    {
+        "name": "mulh",
+        "f3": 0x1,
+        "f7": 0x01,
+        "op": lambda rs1, rs2: (rs1.sign_extended(64) * rs2.sign_extended(64))[32:64]
+    },
+    {
+        "name": "mulhsu",
+        "f3": 0x2,
+        "f7": 0x01,
+        "op": lambda rs1, rs2: (rs1.sign_extended(64) * rs2.zero_extended(64))[32:64]
+    },
+    {
+        "name": "mulu", # AKA mulhu
+        "f3": 0x3,
+        "f7": 0x01,
+        "op": lambda rs1, rs2: (rs1.zero_extended(64) * rs2.zero_extended(64))[32:64]
+    },
 ]
 
 i_type_instructions = [

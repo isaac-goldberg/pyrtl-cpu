@@ -1,11 +1,13 @@
 import pyrtl
 from assembler import assemble
 from instructions import *
+from program import get_program
 
 pc = pyrtl.Register(bitwidth=32, name='pc')
 reg_file = pyrtl.MemBlock(bitwidth=32, addrwidth=5, name='reg_file', asynchronous=True)
 
-program = assemble("./arithmetic.asm")
+# program = assemble("./matrix.asm")
+program = assemble(get_program())
 i_mem = pyrtl.RomBlock(bitwidth=32, addrwidth=32, romdata=program, name='i_mem', asynchronous=True, pad_with_zeros=True)
 
 word_addr = pyrtl.concat(pyrtl.Const(0, 2), pc[2:32])
@@ -122,6 +124,8 @@ while True:
         ecall_code_state = sim.inspect(ecall_code)
         if ecall_code_state == 1:
             print(reg_states.get(10, 0))
+        elif ecall_code_state == 2:
+            print()
         elif ecall_code_state == 10:
             break
     
